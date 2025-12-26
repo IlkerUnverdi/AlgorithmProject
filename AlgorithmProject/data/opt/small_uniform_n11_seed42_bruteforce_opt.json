@@ -1,0 +1,20 @@
+{
+  "instance_name": "small_uniform_n11_seed42",
+  "method": "Exact TSP via Brute Force Enumeration",
+  "n": 11,
+  "best_length": 2721.4426586814343,
+  "best_tour": [
+    0,
+    4,
+    1,
+    6,
+    5,
+    8,
+    7,
+    2,
+    10,
+    3,
+    9
+  ],
+  "runtime_sec": 52.172346
+}
