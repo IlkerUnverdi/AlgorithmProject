@@ -1,0 +1,26 @@
+{
+  "instance_name": "small_uniform_n10_seed42",
+  "method": "TSP Simulated Annealing (2-opt)",
+  "params": {
+    "seed": 5017,
+    "max_iters": 40000,
+    "t0": 1500.0,
+    "alpha": 0.995,
+    "t_min": 1e-06
+  },
+  "best_length": 2641.3887564142315,
+  "best_tour": [
+    4,
+    1,
+    6,
+    5,
+    8,
+    2,
+    7,
+    3,
+    9,
+    0
+  ],
+  "runtime_sec": 0.12613,
+  "iters_done": 4216
+}

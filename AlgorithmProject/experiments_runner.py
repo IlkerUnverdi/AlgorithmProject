@@ -14,7 +14,9 @@ from tsp_aco_solver import TSPAntColonySolver
 
 
 INSTANCES = {
+    "small": os.path.join("data", "instances", "small_uniform_n10_seed42.json"),
     "medium": os.path.join("data", "instances", "medium_uniform_n50_seed43.json"),
+    "medium_cluster": os.path.join("data", "instances", "medium_cluster_cluster_n50_seed45.json"),
     "large": os.path.join("data", "instances", "large_uniform_n100_seed44.json"),
 }
 
@@ -25,9 +27,26 @@ def ensure_out_dir() -> None:
     os.makedirs(OUT_DIR, exist_ok=True)
 
 
+def find_opt_path(instance_name: str) -> str | None:
+    candidates = [
+        os.path.join("data", "opt", f"{instance_name}_bruteforce_opt.json"),
+        os.path.join("data", "opt", f"{instance_name}_opt.json"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def load_json(path: str) -> Dict[str, Any]:
+    import json
+
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def run_sa(instance_path: str, tag: str, seed: int) -> Dict[str, Any]:
     sa = TSPSimulatedAnnealingSolver()
-    # Force True so each run produces distinct output files by tag
     return sa.solve_and_save(
         instance_path=instance_path,
         tag=tag,
@@ -36,7 +55,7 @@ def run_sa(instance_path: str, tag: str, seed: int) -> Dict[str, Any]:
         t0=1500.0,
         alpha=0.995,
         t_min=1e-6,
-        force=True
+        force=True,
     )
 
 
@@ -53,7 +72,7 @@ def run_aco(instance_path: str, tag: str, seed: int) -> Dict[str, Any]:
         rho=0.5,
         q=1.0,
         tau0=1.0,
-        force=True
+        force=True,
     )
 
 
@@ -68,7 +87,6 @@ def write_csv(rows: List[Dict[str, Any]], path: str) -> None:
 
 
 def summarize(values: List[float]) -> Tuple[float, float, float]:
-    # returns (min, mean, stdev)
     vmin = min(values)
     vmean = statistics.mean(values)
     vstdev = statistics.stdev(values) if len(values) >= 2 else 0.0
@@ -87,11 +105,24 @@ def run_experiments(instance_key: str, runs: int = 10, base_seed: int = 1000) ->
 
     inst = load_instance_json(instance_path)
 
+    opt_len: float | None = None
+    if instance_key == "small":
+        opt_path = find_opt_path(inst.name)
+        if opt_path is None:
+            print("[ERR] small OPT file not found. Run brute force first.")
+            print("      Expected under data/opt/ with *_bruteforce_opt.json")
+            return
+        opt = load_json(opt_path)
+        opt_len = float(opt["best_length"])
+
     rows: List[Dict[str, Any]] = []
     sa_lengths: List[float] = []
     sa_times: List[float] = []
     aco_lengths: List[float] = []
     aco_times: List[float] = []
+
+    sa_ratios: List[float] = []
+    aco_ratios: List[float] = []
 
     print(f"\n[RUN] experiments on {instance_key}: {inst.name} (n={inst.n}), runs={runs}")
 
@@ -116,7 +147,7 @@ def run_experiments(instance_key: str, runs: int = 10, base_seed: int = 1000) ->
         aco_lengths.append(aco_len)
         aco_times.append(aco_rt)
 
-        rows.append({
+        row: Dict[str, Any] = {
             "instance": instance_key,
             "n": inst.n,
             "run": r + 1,
@@ -125,9 +156,26 @@ def run_experiments(instance_key: str, runs: int = 10, base_seed: int = 1000) ->
             "sa_runtime_sec": sa_rt,
             "aco_length": aco_len,
             "aco_runtime_sec": aco_rt,
-        })
+        }
 
-        print(f"run {r+1:02d} seed={seed} | SA={sa_len:.3f} ({sa_rt:.3f}s) | ACO={aco_len:.3f} ({aco_rt:.3f}s)")
+        if opt_len is not None and opt_len > 0:
+            sa_ratio = sa_len / opt_len
+            aco_ratio = aco_len / opt_len
+            sa_ratios.append(sa_ratio)
+            aco_ratios.append(aco_ratio)
+            row["opt_length"] = opt_len
+            row["sa_ratio"] = sa_ratio
+            row["aco_ratio"] = aco_ratio
+
+        rows.append(row)
+
+        if opt_len is not None:
+            print(
+                f"run {r+1:02d} seed={seed} | SA={sa_len:.3f} ({sa_rt:.3f}s) ratio={sa_len/opt_len:.4f} | "
+                f"ACO={aco_len:.3f} ({aco_rt:.3f}s) ratio={aco_len/opt_len:.4f}"
+            )
+        else:
+            print(f"run {r+1:02d} seed={seed} | SA={sa_len:.3f} ({sa_rt:.3f}s) | ACO={aco_len:.3f} ({aco_rt:.3f}s)")
 
     t_global1 = time.time()
 
@@ -142,10 +190,19 @@ def run_experiments(instance_key: str, runs: int = 10, base_seed: int = 1000) ->
 
     print("\n===== SUMMARY =====")
     print(f"Instance: {instance_key} (n={inst.n})")
+    if opt_len is not None:
+        print(f"OPT length           : {opt_len:.3f}")
     print(f"SA  length  min/mean/std : {sa_min:.3f} / {sa_mean:.3f} / {sa_std:.3f}")
     print(f"ACO length  min/mean/std : {aco_min:.3f} / {aco_mean:.3f} / {aco_std:.3f}")
     print(f"SA  runtime mean (sec)   : {sa_t_mean:.3f}")
     print(f"ACO runtime mean (sec)   : {aco_t_mean:.3f}")
+
+    if opt_len is not None and sa_ratios and aco_ratios:
+        sa_rmin, sa_rmean, sa_rstd = summarize(sa_ratios)
+        aco_rmin, aco_rmean, aco_rstd = summarize(aco_ratios)
+        print(f"SA  ratio   min/mean/std : {sa_rmin:.4f} / {sa_rmean:.4f} / {sa_rstd:.4f}")
+        print(f"ACO ratio   min/mean/std : {aco_rmin:.4f} / {aco_rmean:.4f} / {aco_rstd:.4f}")
+
     print(f"CSV saved to             : {csv_path}")
     print(f"Total experiment time(s) : {round(t_global1 - t_global0, 3)}")
     print("===================\n")

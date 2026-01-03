@@ -15,7 +15,7 @@ from tsp_core import load_instance_json, tour_length
 class TSPBruteForceSolver:
     """
     Exact TSP solver using brute-force enumeration.
-    Intended ONLY for small instances (n <= ~11).
+    Intended ONLY for small instances (n <= ~10).
     """
 
     def __init__(self, opt_dir: str = os.path.join("data", "opt")) -> None:

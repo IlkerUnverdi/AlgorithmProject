@@ -1,0 +1,28 @@
+{
+  "instance_name": "small_uniform_n10_seed42",
+  "method": "TSP Ant Colony Optimization",
+  "params": {
+    "seed": 5029,
+    "n_ants": 40,
+    "n_iters": 300,
+    "alpha": 1.0,
+    "beta": 5.0,
+    "rho": 0.5,
+    "q": 1.0,
+    "tau0": 1.0
+  },
+  "best_length": 2641.3887564142315,
+  "best_tour": [
+    0,
+    4,
+    1,
+    6,
+    5,
+    8,
+    2,
+    7,
+    3,
+    9
+  ],
+  "runtime_sec": 3.2621
+}

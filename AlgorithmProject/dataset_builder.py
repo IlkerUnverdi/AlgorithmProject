@@ -6,7 +6,15 @@ import os
 import random
 from typing import List, Tuple, Optional
 
-from tsp_core import Point, TSPInstance, build_distance_matrix, save_instance_json, load_instance_json, tour_length, is_valid_tour
+from tsp_core import (
+    Point,
+    TSPInstance,
+    build_distance_matrix,
+    save_instance_json,
+    load_instance_json,
+    tour_length,
+    is_valid_tour,
+)
 
 
 class DatasetBuilder:
@@ -14,7 +22,7 @@ class DatasetBuilder:
         self,
         base_dir: str = os.path.join("data", "instances"),
         x_range: Tuple[float, float] = (0.0, 1000.0),
-        y_range: Tuple[float, float] = (0.0, 1000.0)
+        y_range: Tuple[float, float] = (0.0, 1000.0),
     ) -> None:
         self.base_dir = base_dir
         self.x_range = x_range
@@ -25,7 +33,7 @@ class DatasetBuilder:
         n: int,
         seed: int,
         mode: str = "uniform",
-        clusters: int = 3
+        clusters: int = 3,
     ) -> List[Point]:
         rng = random.Random(seed)
 
@@ -57,7 +65,7 @@ class DatasetBuilder:
         seed: int,
         name: Optional[str] = None,
         mode: str = "uniform",
-        clusters: int = 3
+        clusters: int = 3,
     ) -> TSPInstance:
         if n < 3:
             raise ValueError("TSP icin n en az 3 olmali.")
@@ -71,7 +79,7 @@ class DatasetBuilder:
 
     def build_default_dataset(self, force: bool = False) -> None:
         specs = [
-            ("small", 11, 42, "uniform"),
+            ("small", 10, 42, "uniform"),
             ("medium", 50, 43, "uniform"),
             ("large", 100, 44, "uniform"),
             ("medium_cluster", 50, 45, "cluster"),
@@ -82,7 +90,7 @@ class DatasetBuilder:
                 n=n,
                 seed=seed,
                 name=f"{tag}_{mode}_n{n}_seed{seed}",
-                mode=mode
+                mode=mode,
             )
             out_path = os.path.join(self.base_dir, f"{inst.name}.json")
 
@@ -92,8 +100,7 @@ class DatasetBuilder:
             else:
                 print(f"[SKIP] exists: {out_path}")
 
-        # quick check only if small exists
-        small_path = os.path.join(self.base_dir, "small_uniform_n11_seed42.json")
+        small_path = os.path.join(self.base_dir, "small_uniform_n10_seed42.json")
         if os.path.exists(small_path):
             inst = load_instance_json(small_path)
             tour = list(range(inst.n))
